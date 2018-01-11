@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:mock="http://www.mulesoft.org/schema/mule/mock"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:core="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd
+http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+    <munit:config name="munit" doc:name="MUnit configuration"/>
+    <spring:beans>
+        <spring:import resource="classpath:mavenproject.xml"/>
+    </spring:beans>
+    <munit:test name="munittest-test-suite-decision1FlowTest" description="Test">
+        <flow-ref name="decision1Flow" doc:name="Flow-ref to decision1Flow"/>
+        <munit:assert-on-equals expectedValue="#['decision1']" actualValue="#[flowVars.decisionVariable]" doc:name="Assert Equals"/>
+    </munit:test>
+     <munit:test name="munittest-test-suite-decision2FlowTest" description="MUnit Test">
+        <flow-ref name="decision2Flow" doc:name="decision2Flow"/>
+        <munit:assert-on-equals message="Sorry you did not got expected value" expectedValue="#['decision2']" actualValue="#[flowVars.decisionVariable]" doc:name="Assert Equals"/>
+    </munit:test>
+      <munit:test name="munittest-test-suite-decisionFlowTest-mock-call-1" description="Test">
+        <set-payload value="#['value2']" doc:name="Set Payload"/>
+        <flow-ref name="decisionFlow" doc:name="decisionFlow"/>
+        <mock:verify-call messageProcessor="mule:sub-flow" times="1" doc:name="Verify Call">
+            <mock:with-attributes>
+                <mock:with-attribute name="name" whereValue="#[matchContains('decision2Flow')]"/>
+            </mock:with-attributes>
+        </mock:verify-call>
+    </munit:test>
+      <munit:test name="munittest-test-suite-decisionFlowTest-flowVariable-1" description="Test">
+        <set-payload value="#['value1']" doc:name="Set Payload"/>
+        <flow-ref name="decisionFlow" doc:name="Flow-ref to decisionFlow"/>
+        <munit:assert-on-equals message="Sorry you did not got expected value" expectedValue="#['decision1']" actualValue="#[flowVars.decisionVariable]" doc:name="Assert Equals"/>
+    </munit:test>
+    <munit:test name="munittest-test-suite-decisionFlowTest-flowVariable-2" description="Test">
+   	   <set-payload value="#['value2']" doc:name="Set Payload"/> 
+       <flow-ref name="decisionFlow" doc:name="Flow-ref to decisionFlow"/> 
+       <munit:assert-on-equals message="Sorry you did not got expected value" expectedValue="#['decision2']" actualValue="#[flowVars.decisionVariable]" doc:name="Assert Equals"/> 
+   </munit:test>
+    <munit:test name="munittest-test-suite-munit-main-FlowTest" description="Test">
+        <mock:when messageProcessor="mule:set-payload" doc:name="Mock ">
+            <mock:with-attributes>
+                <mock:with-attribute name="doc:name" whereValue="#['Set Payload']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[]"/>
+        </mock:when>
+        <mock:when messageProcessor="mule:flow" doc:name="Mock Decision Flow Reference">
+            <mock:with-attributes>
+                <mock:with-attribute name="name" whereValue="#['decisionFlow']"/>
+            </mock:with-attributes>
+            <mock:then-return payload="#[]">
+                <mock:invocation-properties>
+                    <mock:invocation-property key="decisionVariable" value="#['decision2']"/>
+                </mock:invocation-properties>
+            </mock:then-return>
+        </mock:when>
+        <flow-ref name="mavenprojectFlow" doc:name="mavenprojectFlow"/>
+        <munit:assert-payload-equals message="OOPS --- wrong message" expectedValue="#['Decision 2 was taken']" doc:name="Assert Payload"/>
+    </munit:test>
+</mule>
